@@ -351,7 +351,14 @@ sampler_mh <- monty_sampler_adaptive(vcv)
 
 # This takes about about 2 minutes on my laptop for the deterministic model and 
 # 8 minutes for the stochastic model
-samples_mh <- monty_sample(...)
+samples_mh <- monty_sample(model, 
+                           sampler_mh, 
+                           20000, # We run 20000 iterations
+                           initial = packer$pack(true_pars), 
+                           # These are our initial values. They should be in the 
+                           # same order as the parameter names in the packer above
+                           n_chains = 2, # We run 2 chains
+                           runner = runner)
 ```
 
 # Step 4: Check results
@@ -376,8 +383,8 @@ summarise_draws(draws_rw)
 
 ```{r MH summary}
 # Repeat this here for the MH algortihm
-draws_mh <- as_draws_df(...)
-summarise_draws(...)
+draws_mh <- as_draws_df(samples_mh)
+summarise_draws(draws_mh)
 ```
 
 You can already see that the estimates are pretty good.
@@ -395,7 +402,8 @@ matplot(samples_rw$density, type = "l", lty = 1,
 
 ```{r MH density}
 # Repeat this here for the MH algortihm
-matplot(...)
+matplot(samples_mh$density, type = "l", lty = 1,
+        xlab = "Iteration", ylab = "Posterior probability density")
 ```
 
 ```{r RW parameter trace}
@@ -406,7 +414,7 @@ mcmc_trace(draws_rw, facet_args = list(ncol = 1, strip.position = "left"))
 
 ```{r MH parameter trace}
 # Repeat this here for the MH algorithm
-mcmc_trace(...)
+mcmc_trace(draws_mh, facet_args = list(ncol = 1, strip.position = "left"))
 ```
 
 ```{r RW posterior incertainty}
@@ -420,7 +428,11 @@ mcmc_intervals(draws_array_rw, pars = "gamma") +
 
 ```{r MH posterior incertainty}
 # Repeat this here for the MH algortihm
-draws_array_mh <- ...
+draws_array_mh <- as_draws_array(draws_mh)
+mcmc_intervals(draws_array_mh, pars = "beta") +
+  labs(y = "Parameter\n", x = "\nPosterior uncertainty interval")
+mcmc_intervals(draws_array_mh, pars = "gamma") +
+  labs(y = "Parameter\n", x = "\nPosterior uncertainty interval")
 ```
 
 ```{r RW univeriate posterior}
@@ -430,7 +442,7 @@ mcmc_hist(draws_array_rw)
 
 ```{r MH univeriate posterior}
 # Repeat this here for the MH algortihm 
-mcmc_hist(...)
+mcmc_hist(draws_array_mh)
 ```
 
 ```{r RW fit}
@@ -461,7 +473,28 @@ incidence_rw %>%
 
 ```{r MH fit}
 # Repeat this here for the MH algorithm
-trajectories_mh <- ...
+trajectories_mh <- dust_unpack_state(filter,
+                                  samples_mh$observations$trajectories)
+incidence_mh <- array(trajectories_mh$incidence, c(11, 20000)) 
+# 11 time steps, 20000 samples  
+
+# Save this as a dataframe for easier plotting
+incidence_mh <- data.frame(incidence$time, incidence_mh)
+colnames(incidence_mh) <- c("time", paste0("sample_", 1:20000)) 
+
+# Plot the fit
+incidence_mh %>% 
+  pivot_longer(cols = -time, names_to = "sample", 
+               values_to = "seroconversion") %>%
+  ggplot(aes(x = time, y = seroconversion)) +
+  geom_line(aes(group = sample, col = "Fitted data")) +
+  geom_point(data = incidence, aes(x = time, y = cases, col = "Observed data")) +
+  labs(x = "Age (days)", 
+       y = " Proportion seroconverted\n",
+       colour = "Data type") +
+  scale_color_manual(values = c("Fitted data" = "#5F9EA0", 
+                                "Observed data" = "red")) +
+  theme_minimal()
 ```
 
 # Step 6: Tuning the MCMC (optional)
@@ -497,13 +530,13 @@ matplot(samples_thinned$density, type = "l", lty = 1,
 
 ```{r Tuned trace}
 # Check the trace for each parameter
-draws_thinned <- as_draws_df(...)
-mcmc_trace(...)
+draws_thinned <- as_draws_df(samples_thinned)
+mcmc_trace(draws_thinned)
 ```
 
 ```{r Tuned summary}
 # Look at the summary statistics
-summarise_draws(...)
+summarise_draws(draws_thinned)
 ```
 
 ```{r Tuned fit}
@@ -537,9 +570,9 @@ A better way of displaying the fit is to plot the credible intervals of the post
 incidence_summary <- incidence_df %>% 
   pivot_longer(cols = -time, names_to = "sample", values_to = "cases") %>%
   group_by(time) %>%
-  summarise(median = ...,
-            lower_95 = ...,
-            upper_95 = ...)
+  summarise(median = median(cases),
+            lower_95 = quantile(cases, 0.025),
+            upper_95 = quantile(cases, 0.975))
 
 # Plot credible intervals
 incidence_summary %>% 
