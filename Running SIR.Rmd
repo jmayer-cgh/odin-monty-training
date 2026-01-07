@@ -98,7 +98,7 @@ pacman::p_load(odin2, dust2, monty, dplyr, tidyr, ggplot2, kableExtra, knitr,
 # Step 1: Simulate SIR Epidemic Data
 
 We'll use an SIR model to simulate incidence data.
-You can choose between a deterministic and a stochastic version of the SIR model, which are written in separate files for readability.
+You can choose between a deterministic and a stochastic version of the SIR model, both of which are written in separate files for readability.
 Head to the files to see the details of the models.
 You will see some comments there explaining the different parts of the model.
 
@@ -115,16 +115,17 @@ gen_sir <- odin(model_file)
 # Step 1: Simple model run
 
 This can be helpful to check that your model is behaving as expect (e.g., no negative numbers for people).
-We will also use to generate data to fit the model to later.
-We set the true values of the parameters we will later try to estimate.
+We will also use this to generate the data to which we will fit the model later.
+
+We set the true values of the parameters that we will later try to estimate.
 We set the initial number of infected individuals to 1, the transmission rate $\beta$ to 0.1 and the average infectious period to 20 days ($\gamma$ = 0.05).
 With these values, we have $R_0 = \frac{\beta}{\gamma} =$ 2.
 
-Here, we are generating incidence data,
+Here, we are generating incidence data.
 
 ```{r Define true parameters}
 # You can parse parameter values and initial states that are different from the 
-# ones specified in your odin model
+# ones already specified in your odin model
 true_pars <- list(beta = 0.1,
              gamma = 0.05,
              I0 = 1
@@ -212,11 +213,12 @@ kable(incidence, col.names = c("Time (days)", "Incidence"),
 # Step 2: Fitting
 
 If the model is behaving as expected, you can move on to the fitting.
-We will fit the model to the generated incidence data using the *monty* package.
+We will fit the model to the generated incidence data using the **monty** package.
 
 To fit the model, we need a function that tells us if the model output is close to the observed data.
 This is the comparison function that is used by the particle filter and that computes the log-likelihood.
-When using *odin2* and *monty*, this is done in the model (see the last three lines of the model code).
+When using **odin2** and **monty**, this is done in the model (see the last three lines of the model code).
+
 We can now build a particle filter that will use this function and test the outputs.
 
 ```{r Build a filter}
@@ -238,7 +240,7 @@ dust_likelihood_run(filter,
 #                     )
 ```
 
-When using real data it can be helpful to plot the model and the data together to see why the filter is returning a specific likelihood value, especially if it's not what you would expect (e.g., it's very low).
+When using real data, it can be helpful to plot the model and the data together to see why the filter is returning a specific likelihood value, especially if it's not what you would expect (e.g., it's very low).
 
 ```{r Plot the filter outputs}
 # Plot the fit
@@ -283,7 +285,7 @@ If you're using a deterministic model, all trajectories will be the same and the
 # Step 3: The MCMC
 
 Now we can set up our MCMC.
-*monty* offers 4 different samplers:
+**monty** offers 4 different samplers:
 
 -   Random Walk Sampler
 -   Adaptive Metropolis-Hastings Sampler
@@ -358,7 +360,7 @@ samples_mh <- monty_sample(...)
 
 We can check our results.
 These tools must be imported from other packages.
-We use *posterior* here.
+We use **posterior** here.
 
 ```{r RW summary}
 draws_rw <- as_draws_df(samples_rw)
@@ -481,7 +483,7 @@ sampler_tuned <- monty_sampler_random_walk(vcv_tuned)
 # about 8 minutes for the deterministic one)
 samples_tuned <- monty_sample(model, 
                               sampler_tuned, 
-                              80000, # This time we run 8,000 iterations
+                              80000, # This time we run 80,000 iterations
                               initial = packer$pack(true_pars),
                               n_chains = 2,
                               runner = runner)
