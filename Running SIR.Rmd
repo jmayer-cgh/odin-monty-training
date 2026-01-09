@@ -37,7 +37,7 @@ We'll cover:
 6.  Posterior predictive checks
 7.  Tuning the MCMC samplers
 
-For more information on the odin, odin.dust, and mcstate packages see:
+For more information on the odin, odin2, and monty packages see:
 
 -   odin2: <https://mrc-ide.github.io/odin2/>
 -   dust2: <https://mrc-ide.github.io/dust2/>
